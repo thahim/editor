@@ -102,9 +102,7 @@
     <img class="son-photo" src="https://thahim.github.io/ast/images/IMG-20250516-WA0027.jpg" alt="Abdul Salam" />
   </footer>
 
-  <script type="module">
-    import { removeBackgroundFromImage } from 'https://cdn.skypack.dev/@imgly/background-removal';
-
+  <script>
     const foregroundInput = document.getElementById('foreground');
     const backgroundInput = document.getElementById('background');
     const canvas = document.getElementById('resultCanvas');
@@ -115,17 +113,16 @@
     let fgImage = null;
     let bgImage = null;
 
-    foregroundInput.addEventListener('change', async (e) => {
+    foregroundInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (file) {
-        const result = await removeBackgroundFromImage({ image: file });
         fgImage = new Image();
         fgImage.onload = () => {
           if (bgImage) {
             drawImages();
           }
         };
-        fgImage.src = URL.createObjectURL(result);
+        fgImage.src = URL.createObjectURL(file);
       }
     });
 
@@ -168,4 +165,3 @@
   </script>
 </body>
 </html>
-
