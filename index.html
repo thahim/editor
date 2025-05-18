@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Auto-Background Removal & Compositor</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+      background: #fafafa;
+    }
+    #controls {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin: 8px 0 4px;
+      font-weight: bold;
+    }
+    input, button {
+      padding: 8px 12px;
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    canvas {
+      border: 1px solid #ccc;
+      max-width: 100%;
+      display: block;
+      margin: 10px auto;
+    }
+  </style>
+
+  <!-- TensorFlow.js and BodyPix -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.9.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix@2.0.5/dist/body-pix.min.js"></script>
+</head>
+<body>
+
+  <h2>Auto Background-Removal Compositor</h2>
+
+  <div id="controls">
+    <label for="fgUpload">Upload Foreground Image:</label>
+    <input type="file" id="fgUpload" accept="image/*">
+
+    <label for="bgUpload">Upload Background Image:</label>
+    <input type="file" id="bgUpload" accept="image/*">
+
+    <button id="processBtn" disabled>Process & Composite</button>
+    <button id="downloadBtn" disabled>Download PNG</button>
+  </div>
+
+  <canvas id="canvas"></canvas>
+
+  <script>
+    let net;
+    const canvas      = document.getElementById('canvas');
+    const ctx         = canvas.getContext('2d');
+    const fgUpload    = document.getElementById('fgUpload');
+    const bgUpload    = document.getElementById('bgUpload');
+    const processBtn  = document.getElementById('processBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    let fgImg = new Image();
+    let bgImg = new Image();
+    let width = 0, height = 0;
+
+    // 1. Load BodyPix model
+    bodyPix.load().then(model => {
+      net = model;
+      processBtn.disabled = false;
+    });
+
+    // 2. Load foreground image
+    fgUpload.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        fgImg.onload = () => {
+          // set canvas size to the fg image
+          width  = fgImg.width;
+          height = fgImg.height;
+          canvas.width  = width;
+          canvas.height = height;
+        };
+        fgImg.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // 3. Load background image
+    bgUpload.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        bgImg.onload = () => {
+          // okay to composite once fg is ready
+        };
+        bgImg.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // 4. When “Process & Composite” clicked
+    processBtn.addEventListener('click', async () => {
+      if (!net || !fgImg.src || !bgImg.src) {
+        alert('Please load both foreground and background images—and wait for model to load.');
+        return;
+      }
+
+      // 4a. Run segmentation on fgImg
+      const segmentation = await net.segmentPerson(fgImg, {
+        internalResolution: 'medium',
+        segmentationThreshold: 0.7
+      });
+
+      // 4b. Draw background first
+      ctx.clearRect(0, 0, width, height);
+      ctx.drawImage(bgImg, 0, 0, width, height);
+
+      // 4c. Composite only the person pixels from fgImg
+      const mask = segmentation.data;
+      // draw fg image onto an offscreen canvas to grab pixel data
+      const off = document.createElement('canvas');
+      off.width = width; off.height = height;
+      const offCtx = off.getContext('2d');
+      offCtx.drawImage(fgImg, 0, 0, width, height);
+      const fgData = offCtx.getImageData(0, 0, width, height);
+      const outData = ctx.getImageData(0, 0, width, height);
+
+      // for each pixel, if mask=1 keep fg, else leave bg
+      for (let i = 0; i < mask.length; i++) {
+        if (mask[i] === 1) {
+          outData.data[4*i + 0] = fgData.data[4*i + 0];
+          outData.data[4*i + 1] = fgData.data[4*i + 1];
+          outData.data[4*i + 2] = fgData.data[4*i + 2];
+          outData.data[4*i + 3] = fgData.data[4*i + 3];
+        }
+      }
+      ctx.putImageData(outData, 0, 0);
+
+      downloadBtn.disabled = false;
+    });
+
+    // 5. Download result
+    downloadBtn.addEventListener('click', () => {
+      const link = document.createElement('a');
+      link.href     = canvas.toDataURL('image/png');
+      link.download = 'composite.png';
+      link.click();
+    });
+  </script>
+
+</body>
+</html>
