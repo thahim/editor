@@ -1,22 +1,164 @@
 <!DOCTYPE html>
-<html lang="ur">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Background Changer</title>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.9.0/dist/tf.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix@2.0.5/dist/body-pix.min.js"></script>
   <style>
-    :root {
-      --color-bg: #f8fafc;
-      --color-surface: #ffffff;
-      --color-primary: #4f46e5;
-      --color-accent: #ec4899;
-      --color-shadow: rgba(79,70,229,0.3);
-      --color-text: #1e293b;
-    }
-    * { box-sizing: border-box; margin:0; padding:0; }
     body {
-      background: var(--color-bg);
-      color: var(--color-text);
-      font-family:
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+      background-color: #f0f0f0;
+    }
+
+    header {
+      background-color: #4CAF50;
+      color: white;
+      padding: 1em;
+      position: relative;
+    }
+
+    .rounded-photo {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      object-fit: cover;
+      border: 2px solid white;
+    }
+
+    main {
+      padding: 1em;
+    }
+
+    section {
+      margin-bottom: 1em;
+    }
+
+    input[type="file"], input[type="text"] {
+      padding: 0.5em;
+      margin: 0.5em 0;
+      width: 80%;
+      max-width: 300px;
+    }
+
+    button {
+      padding: 0.5em 1em;
+      margin: 0.5em;
+      background-color: #008CBA;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #006f98;
+    }
+
+    canvas {
+      max-width: 100%;
+      height: auto;
+      border: 1px solid #ccc;
+      margin-top: 1em;
+    }
+
+    footer {
+      background-color: #f1f1f1;
+      padding: 1em;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Background Changer</h1>
+    <img src="path_to_your_sons_photo.jpg" alt="Son's Photo" class="rounded-photo" />
+  </header>
+
+  <main>
+    <section>
+      <label for="foreground">Upload Foreground Image:</label><br/>
+      <input type="file" id="foreground" accept="image/*" />
+    </section>
+
+    <section>
+      <label for="background">Upload Background Image:</label><br/>
+      <input type="file" id="background" accept="image/*" />
+    </section>
+
+    <section>
+      <canvas id="resultCanvas"></canvas>
+    </section>
+
+    <button id="downloadBtn">Download Image</button>
+  </main>
+
+  <footer>
+    <p>Developed by Abdul Salam Thahim</p>
+  </footer>
+
+  <script type="module">
+    import { removeBackgroundFromImage } from 'https://cdn.skypack.dev/@imgly/background-removal';
+
+    const foregroundInput = document.getElementById('foreground');
+    const backgroundInput = document.getElementById('background');
+    const canvas = document.getElementById('resultCanvas');
+    const ctx = canvas.getContext('2d');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    let foregroundImage = null;
+    let backgroundImage = null;
+
+    foregroundInput.addEventListener('change', async (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        const result = await removeBackgroundFromImage({ image: file });
+        const img = new Image();
+        img.onload = () => {
+          foregroundImage = img;
+          composeImages();
+        };
+        img.src = URL.createObjectURL(result);
+      }
+    });
+
+    backgroundInput.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const img = new Image();
+          img.onload = function() {
+            backgroundImage = img;
+            composeImages();
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    function composeImages() {
+      if (foregroundImage && backgroundImage) {
+        canvas.width = backgroundImage.width;
+        canvas.height = backgroundImage.height;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(backgroundImage, 0, 0);
+        ctx.drawImage(foregroundImage, 0, 0);
+      }
+    }
+
+    downloadBtn.addEventListener('click', () => {
+      const link = document.createElement('a');
+      link.download = 'background_changed.png';
+      link.href = canvas.toDataURL();
+      link.click();
+    });
+  </script>
+</body>
+</html>
