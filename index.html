@@ -1,142 +1,166 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Auto-Background Removal & Compositor</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      margin: 0;
-      padding: 20px;
-      background: #fafafa;
-    }
-    #controls {
-      margin-bottom: 15px;
-    }
-    label {
-      display: block;
-      margin: 8px 0 4px;
-      font-weight: bold;
-    }
-    input, button {
-      padding: 8px 12px;
-      font-size: 16px;
-      margin-bottom: 10px;
-    }
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-    canvas {
-      border: 1px solid #ccc;
-      max-width: 100%;
-      display: block;
-      margin: 10px auto;
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Abdul Salam Thahim Background Changer</title>
 
-  <!-- TensorFlow.js and BodyPix -->
+  <!-- TensorFlow.js & BodyPix -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.9.0/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix@2.0.5/dist/body-pix.min.js"></script>
+
+  <style>
+    /* ========== Basic & Mobile-First Reset ========== */
+    * { box-sizing: border-box; margin:0; padding:0; }
+    body {
+      font-family: sans-serif;
+      background: #f0f0f0;
+      color: #333;
+      display: flex; flex-direction: column;
+      align-items: center;
+      padding: 16px;
+    }
+    h1 {
+      margin-bottom: 12px;
+      font-size: 1.4rem;
+    }
+    .controls {
+      width: 100%; max-width: 400px;
+      display: grid; gap: 12px;
+      margin-bottom: 16px;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 4px;
+    }
+    input[type="file"], button {
+      width: 100%;
+      padding: 10px;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      background: white;
+    }
+    input[type="file"]:focus, button:focus { outline: none; border-color: #4a90e2; }
+    button {
+      cursor: pointer;
+      background: #4a90e2;
+      color: white;
+      border: none;
+    }
+    button:disabled {
+      background: #999;
+      cursor: not-allowed;
+    }
+    #canvas-container {
+      width: 100%; max-width: 400px;
+      position: relative;
+      background: #000;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+      width: 100%; height: auto;
+    }
+  </style>
 </head>
 <body>
 
-  <h2>Auto Background-Removal Compositor</h2>
+  <h1>Abdul Salam Thahim Background Changer</h1>
 
-  <div id="controls">
-    <label for="fgUpload">Upload Foreground Image:</label>
-    <input type="file" id="fgUpload" accept="image/*">
-
-    <label for="bgUpload">Upload Background Image:</label>
-    <input type="file" id="bgUpload" accept="image/*">
-
-    <button id="processBtn" disabled>Process & Composite</button>
-    <button id="downloadBtn" disabled>Download PNG</button>
+  <div class="controls">
+    <div>
+      <label for="fgUpload">1) Upload Foreground Image</label>
+      <input type="file" id="fgUpload" accept="image/*" />
+    </div>
+    <div>
+      <label for="bgUpload">2) Upload Background Image</label>
+      <input type="file" id="bgUpload" accept="image/*" />
+    </div>
+    <button id="processBtn" disabled>3) Apply & Composite</button>
+    <button id="downloadBtn" disabled>4) Download Result</button>
   </div>
 
-  <canvas id="canvas"></canvas>
+  <div id="canvas-container">
+    <canvas id="canvas"></canvas>
+  </div>
 
   <script>
-    let net;
-    const canvas      = document.getElementById('canvas');
-    const ctx         = canvas.getContext('2d');
-    const fgUpload    = document.getElementById('fgUpload');
-    const bgUpload    = document.getElementById('bgUpload');
-    const processBtn  = document.getElementById('processBtn');
-    const downloadBtn = document.getElementById('downloadBtn');
+    let net;                              // BodyPix model
+    const canvas     = document.getElementById('canvas');
+    const ctx        = canvas.getContext('2d');
+    const fgInput    = document.getElementById('fgUpload');
+    const bgInput    = document.getElementById('bgUpload');
+    const processBtn = document.getElementById('processBtn');
+    const downloadBtn= document.getElementById('downloadBtn');
 
-    let fgImg = new Image();
-    let bgImg = new Image();
-    let width = 0, height = 0;
+    let fgImg = new Image(), bgImg = new Image();
+    let W=0, H=0;
 
-    // 1. Load BodyPix model
-    bodyPix.load().then(model => {
-      net = model;
-      processBtn.disabled = false;
+    // 1. Load BodyPix
+    bodyPix.load().then(m => {
+      net = m;
+      fgInput.disabled = false;
     });
 
-    // 2. Load foreground image
-    fgUpload.addEventListener('change', e => {
+    // 2. Load foreground and resize canvas
+    fgInput.addEventListener('change', e => {
       const file = e.target.files[0];
-      if (!file) return;
+      if (!file || !net) return;
       const reader = new FileReader();
       reader.onload = () => {
         fgImg.onload = () => {
-          // set canvas size to the fg image
-          width  = fgImg.width;
-          height = fgImg.height;
-          canvas.width  = width;
-          canvas.height = height;
+          W = fgImg.width; H = fgImg.height;
+          canvas.width = W; canvas.height = H;
+          // enable only when BG is also chosen
+          processBtn.disabled = !bgImg.src;
         };
         fgImg.src = reader.result;
       };
       reader.readAsDataURL(file);
     });
 
-    // 3. Load background image
-    bgUpload.addEventListener('change', e => {
+    // 3. Load background
+    bgInput.addEventListener('change', e => {
       const file = e.target.files[0];
       if (!file) return;
       const reader = new FileReader();
       reader.onload = () => {
         bgImg.onload = () => {
-          // okay to composite once fg is ready
+          // if fg loaded, enable processing
+          processBtn.disabled = !fgImg.src;
         };
         bgImg.src = reader.result;
       };
       reader.readAsDataURL(file);
     });
 
-    // 4. When “Process & Composite” clicked
+    // 4. Process: remove FG background, composite over BG
     processBtn.addEventListener('click', async () => {
-      if (!net || !fgImg.src || !bgImg.src) {
-        alert('Please load both foreground and background images—and wait for model to load.');
-        return;
-      }
+      processBtn.disabled = true;
 
-      // 4a. Run segmentation on fgImg
+      // 4a. Segment FG
       const segmentation = await net.segmentPerson(fgImg, {
         internalResolution: 'medium',
         segmentationThreshold: 0.7
       });
 
-      // 4b. Draw background first
-      ctx.clearRect(0, 0, width, height);
-      ctx.drawImage(bgImg, 0, 0, width, height);
+      // 4b. Draw BG first
+      ctx.clearRect(0, 0, W, H);
+      ctx.drawImage(bgImg, 0, 0, W, H);
 
-      // 4c. Composite only the person pixels from fgImg
+      // 4c. Composite only FG pixels
       const mask = segmentation.data;
-      // draw fg image onto an offscreen canvas to grab pixel data
       const off = document.createElement('canvas');
-      off.width = width; off.height = height;
+      off.width = W; off.height = H;
       const offCtx = off.getContext('2d');
-      offCtx.drawImage(fgImg, 0, 0, width, height);
-      const fgData = offCtx.getImageData(0, 0, width, height);
-      const outData = ctx.getImageData(0, 0, width, height);
+      offCtx.drawImage(fgImg, 0, 0, W, H);
 
-      // for each pixel, if mask=1 keep fg, else leave bg
+      const fgData  = offCtx.getImageData(0,0,W,H);
+      const outData = ctx.getImageData(0,0,W,H);
+
       for (let i = 0; i < mask.length; i++) {
         if (mask[i] === 1) {
           outData.data[4*i + 0] = fgData.data[4*i + 0];
@@ -150,11 +174,11 @@
       downloadBtn.disabled = false;
     });
 
-    // 5. Download result
+    // 5. Download PNG
     downloadBtn.addEventListener('click', () => {
       const link = document.createElement('a');
+      link.download = 'abl_background_changed.png';
       link.href     = canvas.toDataURL('image/png');
-      link.download = 'composite.png';
       link.click();
     });
   </script>
