@@ -10,59 +10,136 @@
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix@2.0.5/dist/body-pix.min.js"></script>
 
   <style>
-    /* ========== Basic & Mobile-First Reset ========== */
-    * { box-sizing: border-box; margin:0; padding:0; }
+    :root {
+      --color-bg: #f8fafc;
+      --color-surface: #ffffff;
+      --color-primary: #4f46e5;   /* Indigo-500 */
+      --color-accent: #ec4899;    /* Pink-500 */
+      --color-shadow: rgba(79, 70, 229, 0.3);
+      --color-text: #1e293b;
+    }
+
+    /* Reset & base */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
     body {
-      font-family: sans-serif;
-      background: #f0f0f0;
-      color: #333;
-      display: flex; flex-direction: column;
+      background: var(--color-bg);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--color-text);
+      display: flex;
+      flex-direction: column;
       align-items: center;
-      padding: 16px;
+      min-height: 100vh;
+      padding: 1.5rem 1rem 3rem;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
+
     h1 {
-      margin-bottom: 12px;
-      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      font-size: 1.6rem;
+      text-align: center;
+      color: var(--color-primary);
+      text-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
     }
+
     .controls {
-      width: 100%; max-width: 400px;
-      display: grid; gap: 12px;
-      margin-bottom: 16px;
-    }
-    label {
-      font-weight: bold;
-      display: block;
-      margin-bottom: 4px;
-    }
-    input[type="file"], button {
       width: 100%;
-      padding: 10px;
+      max-width: 420px;
+      display: grid;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    label {
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin-bottom: 0.25rem;
+      display: block;
+      color: var(--color-text);
+      user-select: none;
+    }
+
+    input[type="file"] {
+      width: 100%;
+      padding: 0.5rem;
       font-size: 1rem;
       border-radius: 6px;
-      border: 1px solid #ccc;
-      background: white;
-    }
-    input[type="file"]:focus, button:focus { outline: none; border-color: #4a90e2; }
-    button {
+      border: 1.8px solid #d1d5db;
+      background: var(--color-surface);
       cursor: pointer;
-      background: #4a90e2;
-      color: white;
+      transition: border-color 0.2s ease;
+    }
+
+    input[type="file"]:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 8px var(--color-shadow);
+    }
+
+    /* Buttons */
+    .button {
+      display: inline-block;
+      padding: 0.75rem 1.6rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--color-surface);
+      background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
       border: none;
+      border-radius: 8px;
+      box-shadow: 0 6px 15px var(--color-shadow);
+      transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+                  box-shadow 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      user-select: none;
+      width: 100%;
+      text-align: center;
+      font-family: inherit;
     }
-    button:disabled {
-      background: #999;
+
+    .button:hover,
+    .button:focus {
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: 0 12px 24px var(--color-shadow);
+      outline: none;
+    }
+
+    .button:disabled {
+      opacity: 0.5;
       cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
     }
+
     #canvas-container {
-      width: 100%; max-width: 400px;
-      position: relative;
-      background: #000;
-      border-radius: 6px;
+      width: 100%;
+      max-width: 420px;
+      border-radius: 12px;
       overflow: hidden;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+      background: var(--color-surface);
+      user-select: none;
     }
+
     canvas {
       display: block;
-      width: 100%; height: auto;
+      width: 100%;
+      height: auto;
+      image-rendering: auto;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 1rem 0.75rem 2rem;
+      }
+      h1 {
+        font-size: 1.4rem;
+      }
     }
   </style>
 </head>
@@ -73,18 +150,18 @@
   <div class="controls">
     <div>
       <label for="fgUpload">1) Upload Foreground Image</label>
-      <input type="file" id="fgUpload" accept="image/*" />
+      <input type="file" id="fgUpload" accept="image/*" disabled />
     </div>
     <div>
       <label for="bgUpload">2) Upload Background Image</label>
       <input type="file" id="bgUpload" accept="image/*" />
     </div>
-    <button id="processBtn" disabled>3) Apply & Composite</button>
-    <button id="downloadBtn" disabled>4) Download Result</button>
+    <button id="processBtn" disabled class="button">3) Apply & Composite</button>
+    <button id="downloadBtn" disabled class="button">4) Download Result</button>
   </div>
 
   <div id="canvas-container">
-    <canvas id="canvas"></canvas>
+    <canvas id="canvas" aria-label="Image preview"></canvas>
   </div>
 
   <script>
@@ -99,10 +176,13 @@
     let fgImg = new Image(), bgImg = new Image();
     let W=0, H=0;
 
-    // 1. Load BodyPix
+    // 1. Load BodyPix model on start
     bodyPix.load().then(m => {
       net = m;
       fgInput.disabled = false;
+    }).catch(e => {
+      alert('Failed to load ML model. Check your internet connection.');
+      console.error(e);
     });
 
     // 2. Load foreground and resize canvas
@@ -114,7 +194,6 @@
         fgImg.onload = () => {
           W = fgImg.width; H = fgImg.height;
           canvas.width = W; canvas.height = H;
-          // enable only when BG is also chosen
           processBtn.disabled = !bgImg.src;
         };
         fgImg.src = reader.result;
@@ -129,7 +208,6 @@
       const reader = new FileReader();
       reader.onload = () => {
         bgImg.onload = () => {
-          // if fg loaded, enable processing
           processBtn.disabled = !fgImg.src;
         };
         bgImg.src = reader.result;
@@ -140,6 +218,9 @@
     // 4. Process: remove FG background, composite over BG
     processBtn.addEventListener('click', async () => {
       processBtn.disabled = true;
+
+      // Show loading text on button
+      processBtn.textContent = 'Processing...';
 
       // 4a. Segment FG
       const segmentation = await net.segmentPerson(fgImg, {
@@ -171,6 +252,9 @@
       }
       ctx.putImageData(outData, 0, 0);
 
+      // Restore button text & enable buttons
+      processBtn.textContent = '3) Apply & Composite';
+      processBtn.disabled = false;
       downloadBtn.disabled = false;
     });
 
