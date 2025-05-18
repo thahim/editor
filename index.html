@@ -13,137 +13,121 @@
     :root {
       --color-bg: #f8fafc;
       --color-surface: #ffffff;
-      --color-primary: #4f46e5;   /* Indigo-500 */
-      --color-accent: #ec4899;    /* Pink-500 */
-      --color-shadow: rgba(79, 70, 229, 0.3);
+      --color-primary: #4f46e5;
+      --color-accent: #ec4899;
+      --color-shadow: rgba(79,70,229,0.3);
       --color-text: #1e293b;
     }
-
-    /* Reset & base */
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
+    * { box-sizing: border-box; margin:0; padding:0; }
     body {
       background: var(--color-bg);
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       color: var(--color-text);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex; flex-direction: column; align-items: center;
       padding: 1.5rem 1rem 3rem;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
     }
-
-    h1 {
-      font-weight: 700;
-      margin-bottom: 1rem;
-      font-size: 1.6rem;
-      text-align: center;
+    /* Top header frame */
+    #header-frame {
+      width: 100%; max-width: 420px;
+      background: var(--color-surface);
+      border-radius: 12px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+      display: flex; align-items: center;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1.5rem;
+    }
+    #header-frame img {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      margin-right: 0.75rem;
+      object-fit: cover;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    #header-frame .byline {
+      font-weight: 600;
+      font-size: 1rem;
       color: var(--color-primary);
-      text-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
     }
-
+    h1 {
+      color: var(--color-primary);
+      font-size: 1.6rem;
+      margin-bottom: 1rem;
+      text-shadow: 0 2px 6px var(--color-shadow);
+    }
     .controls {
-      width: 100%;
-      max-width: 420px;
-      display: grid;
-      gap: 1rem;
+      width: 100%; max-width: 420px;
+      display: grid; gap: 1rem;
       margin-bottom: 2rem;
     }
-
     label {
       font-weight: 600;
-      font-size: 0.95rem;
       margin-bottom: 0.25rem;
       display: block;
-      color: var(--color-text);
-      user-select: none;
     }
-
-    input[type="file"] {
-      width: 100%;
-      padding: 0.5rem;
+    input[type="file"],
+    input[type="search"] {
+      width: 100%; padding: 0.5rem;
       font-size: 1rem;
-      border-radius: 6px;
       border: 1.8px solid #d1d5db;
+      border-radius: 6px;
       background: var(--color-surface);
-      cursor: pointer;
-      transition: border-color 0.2s ease;
+      transition: border-color .2s;
     }
-
-    input[type="file"]:focus {
-      outline: none;
-      border-color: var(--color-primary);
+    input:focus {
+      outline: none; border-color: var(--color-primary);
       box-shadow: 0 0 8px var(--color-shadow);
     }
-
-    /* Buttons */
     .button {
-      display: inline-block;
-      padding: 0.75rem 1.6rem;
-      font-size: 1rem;
-      font-weight: 600;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem; font-weight: 600;
       color: var(--color-surface);
       background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
-      border: none;
-      border-radius: 8px;
+      border: none; border-radius: 8px;
       box-shadow: 0 6px 15px var(--color-shadow);
-      transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1),
-                  box-shadow 0.22s cubic-bezier(0.4, 0, 0.2, 1);
-      cursor: pointer;
-      user-select: none;
-      width: 100%;
-      text-align: center;
-      font-family: inherit;
+      cursor: pointer; width: 100%;
+      transition: transform .2s, box-shadow .2s;
     }
-
-    .button:hover,
-    .button:focus {
+    .button:hover:not(:disabled) {
       transform: translateY(-3px) scale(1.05);
       box-shadow: 0 12px 24px var(--color-shadow);
-      outline: none;
     }
-
     .button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      transform: none;
-      box-shadow: none;
+      opacity: 0.5; cursor: not-allowed; box-shadow: none;
     }
-
     #canvas-container {
-      width: 100%;
-      max-width: 420px;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+      width: 100%; max-width: 420px;
+      overflow: hidden; border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.12);
       background: var(--color-surface);
-      user-select: none;
+      margin-bottom: 1rem;
     }
-
     canvas {
-      display: block;
-      width: 100%;
-      height: auto;
-      image-rendering: auto;
+      width: 100%; display: block;
     }
-
-    @media (max-width: 600px) {
-      body {
-        padding: 1rem 0.75rem 2rem;
-      }
-      h1 {
-        font-size: 1.4rem;
-      }
+    #searchResults {
+      max-width: 420px;
+      display: flex; flex-wrap: wrap; gap: 0.5rem;
+      justify-content: center; margin-bottom: 1.5rem;
+    }
+    #searchResults img {
+      width: 80px; height: 80px; object-fit: cover;
+      border-radius: 6px; cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      transition: transform .2s, box-shadow .2s;
+    }
+    #searchResults img:hover {
+      transform: scale(1.1);
+      box-shadow: 0 4px 16px var(--color-shadow);
     }
   </style>
 </head>
 <body>
+
+  <!-- Top frame with photo -->
+  <div id="header-frame">
+    <img src="https://thahim.github.io/ast/images/IMG-20250516-WA0027.jpg" alt="Abdul Salam Thahim’s Son">
+    <div class="byline">Developed by Abdul Salam Thahim</div>
+  </div>
 
   <h1>Abdul Salam Thahim Background Changer</h1>
 
@@ -160,112 +144,107 @@
     <button id="downloadBtn" disabled class="button">4) Download Result</button>
   </div>
 
+  <div class="controls">
+    <label for="searchInput">Or Search HD Backgrounds</label>
+    <input type="search" id="searchInput" placeholder="e.g. sunset, forest" />
+  </div>
+  <div id="searchResults"></div>
+
   <div id="canvas-container">
-    <canvas id="canvas" aria-label="Image preview"></canvas>
+    <canvas id="canvas" aria-label="Result preview"></canvas>
   </div>
 
   <script>
-    let net;                              // BodyPix model
-    const canvas     = document.getElementById('canvas');
-    const ctx        = canvas.getContext('2d');
-    const fgInput    = document.getElementById('fgUpload');
-    const bgInput    = document.getElementById('bgUpload');
+    const UNSPLASH_ACCESS_KEY = 'YOUR_UNSPLASH_ACCESS_KEY';
+    let net;
+    const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
+    const fgInput = document.getElementById('fgUpload');
+    const bgInput = document.getElementById('bgUpload');
     const processBtn = document.getElementById('processBtn');
-    const downloadBtn= document.getElementById('downloadBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const searchInput = document.getElementById('searchInput');
+    const searchResults = document.getElementById('searchResults');
 
-    let fgImg = new Image(), bgImg = new Image();
-    let W=0, H=0;
+    let fgImg = new Image(), bgImg = new Image(), W=0, H=0;
 
-    // 1. Load BodyPix model on start
+    // Load BodyPix
     bodyPix.load().then(m => {
       net = m;
       fgInput.disabled = false;
-    }).catch(e => {
-      alert('Failed to load ML model. Check your internet connection.');
-      console.error(e);
     });
 
-    // 2. Load foreground and resize canvas
-    fgInput.addEventListener('change', e => {
-      const file = e.target.files[0];
-      if (!file || !net) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        fgImg.onload = () => {
-          W = fgImg.width; H = fgImg.height;
-          canvas.width = W; canvas.height = H;
-          processBtn.disabled = !bgImg.src;
+    fgInput.addEventListener('change', e=>{
+      const f=e.target.files[0]; if(!f||!net) return;
+      const r=new FileReader();
+      r.onload=()=>{
+        fgImg.onload=()=>{
+          W=fgImg.width; H=fgImg.height;
+          canvas.width=W; canvas.height=H;
+          processBtn.disabled=!bgImg.src;
         };
-        fgImg.src = reader.result;
+        fgImg.src=r.result;
       };
-      reader.readAsDataURL(file);
+      r.readAsDataURL(f);
     });
 
-    // 3. Load background
-    bgInput.addEventListener('change', e => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        bgImg.onload = () => {
-          processBtn.disabled = !fgImg.src;
-        };
-        bgImg.src = reader.result;
+    bgInput.addEventListener('change', e=>{
+      const f=e.target.files[0]; if(!f) return;
+      const r=new FileReader();
+      r.onload=()=>{
+        bgImg.onload=()=>{ processBtn.disabled=!fgImg.src; };
+        bgImg.src=r.result;
       };
-      reader.readAsDataURL(file);
+      r.readAsDataURL(f);
     });
 
-    // 4. Process: remove FG background, composite over BG
-    processBtn.addEventListener('click', async () => {
-      processBtn.disabled = true;
-
-      // Show loading text on button
-      processBtn.textContent = 'Processing...';
-
-      // 4a. Segment FG
-      const segmentation = await net.segmentPerson(fgImg, {
-        internalResolution: 'medium',
-        segmentationThreshold: 0.7
-      });
-
-      // 4b. Draw BG first
-      ctx.clearRect(0, 0, W, H);
-      ctx.drawImage(bgImg, 0, 0, W, H);
-
-      // 4c. Composite only FG pixels
-      const mask = segmentation.data;
-      const off = document.createElement('canvas');
-      off.width = W; off.height = H;
-      const offCtx = off.getContext('2d');
-      offCtx.drawImage(fgImg, 0, 0, W, H);
-
-      const fgData  = offCtx.getImageData(0,0,W,H);
-      const outData = ctx.getImageData(0,0,W,H);
-
-      for (let i = 0; i < mask.length; i++) {
-        if (mask[i] === 1) {
-          outData.data[4*i + 0] = fgData.data[4*i + 0];
-          outData.data[4*i + 1] = fgData.data[4*i + 1];
-          outData.data[4*i + 2] = fgData.data[4*i + 2];
-          outData.data[4*i + 3] = fgData.data[4*i + 3];
+    processBtn.addEventListener('click', async ()=>{
+      processBtn.disabled=true; processBtn.textContent='Processing...';
+      const seg = await net.segmentPerson(fgImg,{internalResolution:'medium',segmentationThreshold:0.7});
+      ctx.clearRect(0,0,W,H);
+      ctx.drawImage(bgImg,0,0,W,H);
+      const mask = seg.data;
+      const off=document.createElement('canvas'); off.width=W; off.height=H;
+      const octx=off.getContext('2d'); octx.drawImage(fgImg,0,0,W,H);
+      const fData=octx.getImageData(0,0,W,H), out=ctx.getImageData(0,0,W,H);
+      for(let i=0;i<mask.length;i++){
+        if(mask[i]===1){
+          out.data[4*i+0]=fData.data[4*i+0];
+          out.data[4*i+1]=fData.data[4*i+1];
+          out.data[4*i+2]=fData.data[4*i+2];
+          out.data[4*i+3]=fData.data[4*i+3];
         }
       }
-      ctx.putImageData(outData, 0, 0);
-
-      // Restore button text & enable buttons
-      processBtn.textContent = '3) Apply & Composite';
-      processBtn.disabled = false;
-      downloadBtn.disabled = false;
+      ctx.putImageData(out,0,0);
+      processBtn.textContent='3) Apply & Composite';
+      processBtn.disabled=false;
+      downloadBtn.disabled=false;
     });
 
-    // 5. Download PNG
-    downloadBtn.addEventListener('click', () => {
-      const link = document.createElement('a');
-      link.download = 'abl_background_changed.png';
-      link.href     = canvas.toDataURL('image/png');
-      link.click();
+    downloadBtn.addEventListener('click', ()=>{
+      const a=document.createElement('a');
+      a.download='result.png'; a.href=canvas.toDataURL('image/png'); a.click();
+    });
+
+    // Unsplash Search
+    searchInput.addEventListener('keyup', async e=>{
+      if(e.key!=='Enter') return;
+      const q=encodeURIComponent(searchInput.value);
+      const url=`https://api.unsplash.com/search/photos?query=${q}&per_page=20&orientation=portrait&client_id=${UNSPLASH_ACCESS_KEY}`;
+      const res=await fetch(url);
+      const data=await res.json();
+      searchResults.innerHTML='';
+      data.results.forEach(img=>{
+        const thumb=img.urls.small, full=img.urls.regular;
+        const el=document.createElement('img');
+        el.src=thumb;
+        el.onclick=()=>{
+          bgImg=new Image();
+          bgImg.onload=()=>{processBtn.disabled=!fgImg.src;ctx.drawImage(bgImg,0,0,W,H);};
+          bgImg.src=full;
+        };
+        searchResults.appendChild(el);
+      });
     });
   </script>
-
 </body>
 </html>
