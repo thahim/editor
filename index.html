@@ -1,167 +1,221 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
   <title>Background Changer</title>
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
       margin: 0;
       padding: 0;
-      background-color: #ffffff;
-      color: #333;
-      text-align: center;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #1e1e2f;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
     }
-
-    header {
-      background: #4a148c;
-      color: white;
-      padding: 1rem;
-      position: relative;
+    h1 {
+      margin-top: 20px;
+      font-size: 2em;
+      color: #00bfff;
     }
-
-    header h1 {
-      margin: 0;
-      font-size: 1.8rem;
+    .controls {
+      margin: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
     }
-
-    .content {
-      padding: 1rem;
-    }
-
     input[type="file"] {
-      margin: 1rem 0;
-      padding: 0.6rem;
-      border: none;
-      border-radius: 5px;
-      width: 90%;
-      max-width: 320px;
-      background-color: #f0f0f0;
-      color: #333;
+      padding: 8px;
+      background-color: #333;
+      color: #fff;
+      border: 1px solid #555;
+      border-radius: 6px;
     }
-
     button {
-      padding: 0.6rem 1.2rem;
-      margin-top: 1rem;
-      background-color: #9c27b0;
-      color: white;
+      padding: 10px 20px;
+      background-color: #00bfff;
+      color: #fff;
       border: none;
       border-radius: 6px;
-      font-size: 1rem;
       cursor: pointer;
+      font-size: 1em;
     }
-
-    button:hover {
-      background-color: #7b1fa2;
+    button:disabled {
+      background-color: #555;
     }
-
     canvas {
-      margin-top: 1rem;
-      max-width: 100%;
-      border-radius: 10px;
-      box-shadow: 0 0 8px rgba(0,0,0,0.2);
+      border: 2px solid #444;
+      border-radius: 8px;
+      background-color: #000;
     }
-
     footer {
-      margin-top: 2rem;
-      background-color: #333;
-      padding: 1rem;
-      font-size: 1rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 1rem;
-    }
-
-    .son-photo {
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 2px solid #4a148c;
+      margin-top: auto;
+      padding: 20px;
+      text-align: center;
+      font-size: 0.9em;
+      color: #888;
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Background Changer</h1>
-  </header>
 
-  <div class="content">
-    <input type="file" id="foreground" accept="image/*" /><br/>
-    <input type="file" id="background" accept="image/*" /><br/>
-    <button id="process">Apply Background</button>
-    <canvas id="resultCanvas"></canvas>
-    <br/>
-    <button id="download" style="display:none;">Download Image</button>
-  </div>
+<h1>Background Changer</h1>
+<canvas id="canvas" width="400" height="400"></canvas>
 
-  <footer>
-    <span>Developed by Abdul Salam Thahim</span>
-    <img class="son-photo" src="https://thahim.github.io/ast/images/IMG-20250516-WA0027.jpg" alt="Abdul Salam" />
-  </footer>
+<div class="controls">
+  <input type="file" id="fgInput" accept="image/*">
+  <input type="file" id="bgInput" accept="image/*">
+  <button id="applyBtn">Apply</button>
+  <button id="applyBestBtn">Apply Best Editing Options</button>
+  <button id="downloadBtn" disabled>Download Result</button>
+</div>
 
-  <script>
-    const foregroundInput = document.getElementById('foreground');
-    const backgroundInput = document.getElementById('background');
-    const canvas = document.getElementById('resultCanvas');
-    const ctx = canvas.getContext('2d');
-    const processButton = document.getElementById('process');
-    const downloadButton = document.getElementById('download');
+<footer>Developed by Abdul Salam Thahim</footer>
 
-    let fgImage = null;
-    let bgImage = null;
+<script>
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  const fgInput = document.getElementById('fgInput');
+  const bgInput = document.getElementById('bgInput');
+  const applyBtn = document.getElementById('applyBtn');
+  const applyBestBtn = document.getElementById('applyBestBtn');
+  const downloadBtn = document.getElementById('downloadBtn');
 
-    foregroundInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        fgImage = new Image();
-        fgImage.onload = () => {
-          if (bgImage) {
-            drawImages();
-          }
-        };
-        fgImage.src = URL.createObjectURL(file);
+  let fgImage = null;
+  let bgImage = null;
+  let fgCanvas = null;
+  let fgScale = 1;
+  let fgPos = { x: canvas.width / 2, y: canvas.height / 2 };
+  let dragging = false;
+  let lastPointer = null;
+
+  function drawScene() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (bgImage) {
+      ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
+    }
+    if (fgCanvas) {
+      const w = fgCanvas.width * fgScale;
+      const h = fgCanvas.height * fgScale;
+      ctx.drawImage(fgCanvas, fgPos.x - w/2, fgPos.y - h/2, w, h);
+    } else if (fgImage) {
+      const w = fgImage.width * fgScale;
+      const h = fgImage.height * fgScale;
+      ctx.drawImage(fgImage, fgPos.x - w/2, fgPos.y - h/2, w, h);
+    }
+  }
+
+  function removeBackground(image) {
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = image.width;
+    tempCanvas.height = image.height;
+    const tCtx = tempCanvas.getContext('2d');
+    tCtx.drawImage(image, 0, 0);
+    const imgData = tCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+    const data = imgData.data;
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i] > 200 && data[i + 1] > 200 && data[i + 2] > 200) {
+        data[i + 3] = 0;
       }
-    });
+    }
+    tCtx.putImageData(imgData, 0, 0);
+    return tempCanvas;
+  }
 
-    backgroundInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        bgImage = new Image();
-        bgImage.onload = () => {
-          if (fgImage) {
-            drawImages();
-          }
-        };
-        bgImage.src = URL.createObjectURL(file);
-      }
-    });
+  function applyBestFiltersToCanvas(canvasInput) {
+    const tCtx = canvasInput.getContext('2d');
+    let imgData = tCtx.getImageData(0, 0, canvasInput.width, canvasInput.height);
+    let data = imgData.data;
+    const brightness = 25, contrast = 1.2, saturation = 1.15;
 
-    processButton.addEventListener('click', () => {
-      if (fgImage && bgImage) {
-        drawImages();
-      } else {
-        alert('Please upload both foreground and background images.');
-      }
-    });
-
-    function drawImages() {
-      canvas.width = bgImage.width;
-      canvas.height = bgImage.height;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(bgImage, 0, 0);
-      ctx.drawImage(fgImage, 0, 0, bgImage.width, bgImage.height);
-      downloadButton.style.display = 'inline-block';
+    function adjust(r, g, b) {
+      r += brightness; g += brightness; b += brightness;
+      r = (((r / 255 - 0.5) * contrast) + 0.5) * 255;
+      g = (((g / 255 - 0.5) * contrast) + 0.5) * 255;
+      b = (((b / 255 - 0.5) * contrast) + 0.5) * 255;
+      return [Math.min(255, Math.max(0, r)), Math.min(255, Math.max(0, g)), Math.min(255, Math.max(0, b))];
     }
 
-    downloadButton.addEventListener('click', () => {
-      const link = document.createElement('a');
-      link.download = 'background_changed.png';
-      link.href = canvas.toDataURL();
-      link.click();
-    });
-  </script>
+    for (let i = 0; i < data.length; i += 4) {
+      let [r, g, b] = adjust(data[i], data[i+1], data[i+2]);
+      data[i] = r; data[i+1] = g; data[i+2] = b;
+    }
+    tCtx.putImageData(imgData, 0, 0);
+    return canvasInput;
+  }
+
+  fgInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const img = new Image();
+    img.onload = () => { fgImage = img; drawScene(); };
+    img.src = URL.createObjectURL(file);
+  });
+
+  bgInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const img = new Image();
+    img.onload = () => { bgImage = img; drawScene(); };
+    img.src = URL.createObjectURL(file);
+  });
+
+  applyBtn.addEventListener('click', () => {
+    if (!fgImage) return;
+    fgCanvas = removeBackground(fgImage);
+    drawScene();
+    downloadBtn.disabled = false;
+  });
+
+  applyBestBtn.addEventListener('click', () => {
+    if (!fgImage) return;
+    let tempCanvas = removeBackground(fgImage);
+    fgCanvas = applyBestFiltersToCanvas(tempCanvas);
+    drawScene();
+    downloadBtn.disabled = false;
+  });
+
+  downloadBtn.addEventListener('click', () => {
+    const link = document.createElement('a');
+    link.download = 'background-changed.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  });
+
+  canvas.addEventListener('pointerdown', (e) => {
+    if (!fgCanvas && !fgImage) return;
+    dragging = true;
+    lastPointer = { x: e.clientX, y: e.clientY };
+    canvas.setPointerCapture(e.pointerId);
+  });
+
+  canvas.addEventListener('pointermove', (e) => {
+    if (!dragging || !lastPointer) return;
+    const dx = e.clientX - lastPointer.x;
+    const dy = e.clientY - lastPointer.y;
+    fgPos.x += dx;
+    fgPos.y += dy;
+    lastPointer = { x: e.clientX, y: e.clientY };
+    drawScene();
+  });
+
+  canvas.addEventListener('pointerup', () => {
+    dragging = false;
+    lastPointer = null;
+  });
+
+  canvas.addEventListener('wheel', (e) => {
+    if (!fgCanvas && !fgImage) return;
+    e.preventDefault();
+    fgScale = Math.min(5, Math.max(0.1, fgScale - e.deltaY * 0.001));
+    drawScene();
+  }, { passive: false });
+
+  drawScene();
+</script>
+
 </body>
 </html>
