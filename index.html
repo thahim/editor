@@ -6,100 +6,95 @@
   <title>Background Changer</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', sans-serif;
       margin: 0;
       padding: 0;
+      background-color: #f5f5f5;
       text-align: center;
-      background-color: #f0f0f0;
     }
 
     header {
-      background-color: #4CAF50;
+      background: linear-gradient(to right, #4CAF50, #388E3C);
       color: white;
-      padding: 1em;
+      padding: 1rem;
       position: relative;
     }
 
-    .rounded-photo {
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      object-fit: cover;
-      border: 2px solid white;
+    header h1 {
+      margin: 0;
+      font-size: 1.8rem;
     }
 
-    main {
-      padding: 1em;
-    }
-
-    section {
-      margin-bottom: 1em;
+    .content {
+      padding: 1rem;
     }
 
     input[type="file"] {
-      padding: 0.5em;
-      margin: 0.5em 0;
-      width: 80%;
-      max-width: 300px;
+      margin: 1rem 0;
+      padding: 0.6rem;
+      border: none;
+      border-radius: 5px;
+      width: 90%;
+      max-width: 320px;
     }
 
     button {
-      padding: 0.5em 1em;
-      margin: 0.5em;
-      background-color: #008CBA;
+      padding: 0.6rem 1.2rem;
+      margin-top: 1rem;
+      background-color: #2196F3;
       color: white;
       border: none;
-      border-radius: 5px;
+      border-radius: 6px;
+      font-size: 1rem;
       cursor: pointer;
     }
 
     button:hover {
-      background-color: #006f98;
+      background-color: #0b7dda;
     }
 
     canvas {
+      margin-top: 1rem;
       max-width: 100%;
-      height: auto;
-      border: 1px solid #ccc;
-      margin-top: 1em;
+      border-radius: 10px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.2);
     }
 
     footer {
-      background-color: #f1f1f1;
-      padding: 1em;
-      font-size: 0.9em;
+      margin-top: 2rem;
+      background-color: #eee;
+      padding: 1rem;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+    }
+
+    .son-photo {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #4CAF50;
     }
   </style>
 </head>
 <body>
   <header>
     <h1>Background Changer</h1>
-    <img src="https://example.com/path_to_your_sons_photo.jpg" alt="Son's Photo" class="rounded-photo" />
   </header>
 
-  <main>
-    <section>
-      <label for="foreground">Upload Foreground Image:</label><br/>
-      <input type="file" id="foreground" accept="image/*" />
-    </section>
-
-    <section>
-      <label for="background">Upload Background Image:</label><br/>
-      <input type="file" id="background" accept="image/*" />
-    </section>
-
-    <section>
-      <canvas id="resultCanvas"></canvas>
-    </section>
-
-    <button id="downloadBtn">Download Image</button>
-  </main>
+  <div class="content">
+    <input type="file" id="foreground" accept="image/*" /><br/>
+    <input type="file" id="background" accept="image/*" /><br/>
+    <button id="process">Apply Background</button>
+    <canvas id="resultCanvas"></canvas>
+  </div>
 
   <footer>
-    <p>Developed by Abdul Salam Thahim</p>
+    <span>Developed by Abdul Salam Thahim</span>
+    <img class="son-photo" src="https://thahim.github.io/ast/images/IMG-20250516-WA0027.jpg" alt="Abdul Salam" />
   </footer>
 
   <script type="module">
@@ -109,55 +104,43 @@
     const backgroundInput = document.getElementById('background');
     const canvas = document.getElementById('resultCanvas');
     const ctx = canvas.getContext('2d');
-    const downloadBtn = document.getElementById('downloadBtn');
+    const button = document.getElementById('process');
 
-    let foregroundImage = null;
-    let backgroundImage = null;
+    let fgBlob = null;
+    let bgImage = null;
 
-    foregroundInput.addEventListener('change', async (event) => {
-      const file = event.target.files[0];
+    foregroundInput.addEventListener('change', e => {
+      const file = e.target.files[0];
       if (file) {
-        const result = await removeBackgroundFromImage({ image: file });
-        const img = new Image();
-        img.onload = () => {
-          foregroundImage = img;
-          composeImages();
-        };
-        img.src = URL.createObjectURL(result);
+        fgBlob = file;
       }
     });
 
-    backgroundInput.addEventListener('change', (event) => {
-      const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          const img = new Image();
-          img.onload = function() {
-            backgroundImage = img;
-            composeImages();
-          };
-          img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-      }
+    backgroundInput.addEventListener('change', e => {
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        bgImage = new Image();
+        bgImage.onload = () => {};
+        bgImage.src = evt.target.result;
+      };
+      reader.readAsDataURL(e.target.files[0]);
     });
 
-    function composeImages() {
-      if (foregroundImage && backgroundImage) {
-        canvas.width = backgroundImage.width;
-        canvas.height = backgroundImage.height;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(backgroundImage, 0, 0);
-        ctx.drawImage(foregroundImage, 0, 0);
+    button.addEventListener('click', async () => {
+      if (!fgBlob || !bgImage) {
+        alert("Please upload both foreground and background images.");
+        return;
       }
-    }
 
-    downloadBtn.addEventListener('click', () => {
-      const link = document.createElement('a');
-      link.download = 'background_changed.png';
-      link.href = canvas.toDataURL();
-      link.click();
+      const result = await removeBackgroundFromImage({ image: fgBlob });
+      const fgImg = new Image();
+      fgImg.onload = () => {
+        canvas.width = bgImage.width;
+        canvas.height = bgImage.height;
+        ctx.drawImage(bgImage, 0, 0);
+        ctx.drawImage(fgImg, 0, 0, bgImage.width, bgImage.height);
+      };
+      fgImg.src = URL.createObjectURL(result);
     });
   </script>
 </body>
