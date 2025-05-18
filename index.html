@@ -9,8 +9,8 @@
       font-family: 'Segoe UI', sans-serif;
       margin: 0;
       padding: 0;
-      background-color: #2a2a2a;
-      color: white;
+      background-color: #ffffff;
+      color: #333;
       text-align: center;
     }
 
@@ -37,8 +37,8 @@
       border-radius: 5px;
       width: 90%;
       max-width: 320px;
-      background-color: #3e3e3e;
-      color: white;
+      background-color: #f0f0f0;
+      color: #333;
     }
 
     button {
@@ -112,57 +112,60 @@
     const processButton = document.getElementById('process');
     const downloadButton = document.getElementById('download');
 
-    let fgBlob = null;
+    let fgImage = null;
     let bgImage = null;
 
-    foregroundInput.addEventListener('change', e => {
+    foregroundInput.addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (file) {
-        fgBlob = file;
+        const result = await removeBackgroundFromImage({ image: file });
+        fgImage = new Image();
+        fgImage.onload = () => {
+          if (bgImage) {
+            drawImages();
+          }
+        };
+        fgImage.src = URL.createObjectURL(result);
       }
     });
 
-    backgroundInput.addEventListener('change', e => {
-      const reader = new FileReader();
-      reader.onload = function(evt) {
+    backgroundInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
         bgImage = new Image();
-        bgImage.onload = () => {};
-        bgImage.src = evt.target.result;
-      };
-      reader.readAsDataURL(e.target.files[0]);
-    });
-
-    processButton.addEventListener('click', async () => {
-      if (!fgBlob || !bgImage) {
-        alert("Please upload both foreground and background images.");
-        return;
+        bgImage.onload = () => {
+          if (fgImage) {
+            drawImages();
+          }
+        };
+        bgImage.src = URL.createObjectURL(file);
       }
-
-      const result = await removeBackgroundFromImage({ image: fgBlob });
-      const fgImg = new Image();
-      fgImg.onload = () => {
-        canvas.width = bgImage.width;
-        canvas.height = bgImage.height;
-        ctx.drawImage(bgImage, 0, 0);
-        ctx.drawImage(fgImg, 0, 0, bgImage.width, bgImage.height);
-        downloadButton.style.display = 'inline-block';
-      };
-      fgImg.src = URL.createObjectURL(result);
     });
+
+    processButton.addEventListener('click', () => {
+      if (fgImage && bgImage) {
+        drawImages();
+      } else {
+        alert('Please upload both foreground and background images.');
+      }
+    });
+
+    function drawImages() {
+      canvas.width = bgImage.width;
+      canvas.height = bgImage.height;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(bgImage, 0, 0);
+      ctx.drawImage(fgImage, 0, 0, bgImage.width, bgImage.height);
+      downloadButton.style.display = 'inline-block';
+    }
 
     downloadButton.addEventListener('click', () => {
-      canvas.toBlob(
-        blob => {
-          const anchor = document.createElement('a');
-          anchor.download = 'background_changed.png';
-          anchor.href = URL.createObjectURL(blob);
-          anchor.click();
-          URL.revokeObjectURL(anchor.href);
-        },
-        'image/png',
-        1
-      );
+      const link = document.createElement('a');
+      link.download = 'background_changed.png';
+      link.href = canvas.toDataURL();
+      link.click();
     });
   </script>
 </body>
 </html>
+
